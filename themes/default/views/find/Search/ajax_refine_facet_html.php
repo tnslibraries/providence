@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------
  *
  * Software by Whirl-i-Gig (http://www.whirl-i-gig.com)
- * Copyright 2010-2017 Whirl-i-Gig
+ * Copyright 2010-2016 Whirl-i-Gig
  *
  * For more information visit http://www.CollectiveAccess.org
  *
@@ -59,7 +59,7 @@
 </div>
 
 <div class="browseSelectPanelContentArea">
-	<h2 class='browse'><?php print caUcFirstUTF8Safe($va_facet_info['label_plural']); ?></h2>
+	<h2 class='browse'><?php print unicode_ucfirst($va_facet_info['label_plural']); ?></h2>
 
 <?php
 	switch($vs_group_mode) {
@@ -113,13 +113,12 @@
 			foreach($va_facet as $vn_i => $va_item) {
 ?>
 <?php
-                $vs_content_count = (isset($va_item['content_count']) && ($va_item['content_count'] > 0)) ? " (".$va_item['content_count'].")" : "";
-				$va_row[] = "<td class='browseSelectPanelListCell' width='{$va_td_width}%;'>".caNavLink($this->request, $va_item['label'], 'browseSelectPanelLink', 'find', $this->request->getController(), ((strlen($vm_modify_id)) ? 'modifyCriteria' : 'addCriteria'), array('facet' => $vs_facet_name, 'id' => $va_item['id'], 'mod_id' => $vm_modify_id))."{$vs_content_count}</td>";
+				$va_row[] = "<td class='browseSelectPanelListCell' width='{$va_td_width}%;'>".caNavLink($this->request, $va_item['label'], 'browseSelectPanelLink', 'find', $this->request->getController(), ((strlen($vm_modify_id)) ? 'modifyCriteria' : 'addCriteria'), array('facet' => $vs_facet_name, 'id' => $va_item['id'], 'mod_id' => $vm_modify_id))."</td>";
 				
 				if (sizeof($va_row) == 5) {
 					print "<tr valign='top'>".join('', $va_row)."</tr>\n";
 					
-					$va_row = [];
+					$va_row = array();
 				}
 			}
 			if (sizeof($va_row) > 0) {
@@ -162,13 +161,12 @@
 		<table class='browseSelectPanelListTable'>
 <?php
 				foreach($va_items as $va_item) {
-				    $vs_content_count = (isset($va_item['content_count']) && ($va_item['content_count'] > 0)) ? " (".$va_item['content_count'].")" : "";
-					$va_row[] = "<td class='browseSelectPanelListCell' width='{$va_td_width}%;'>".caNavLink($this->request, $va_item['label'], 'browseSelectPanelLink', 'find', $this->request->getController(), ((strlen($vm_modify_id) > 0) ? 'modifyCriteria' : 'addCriteria'), array('facet' => $vs_facet_name, 'id' => $va_item['id'], 'mod_id' => $vm_modify_id))."{$vs_content_count}</td>";
+					$va_row[] = "<td class='browseSelectPanelListCell' width='{$va_td_width}%;'>".caNavLink($this->request, $va_item['label'], 'browseSelectPanelLink', 'find', $this->request->getController(), ((strlen($vm_modify_id) > 0) ? 'modifyCriteria' : 'addCriteria'), array('facet' => $vs_facet_name, 'id' => $va_item['id'], 'mod_id' => $vm_modify_id))."</td>";
 					
 					if (sizeof($va_row) == 5) {
 						print "<tr valign='top'>".join('', $va_row)."</tr>\n";
 						
-						$va_row = [];
+						$va_row = array();
 					}
 				}
 				if (sizeof($va_row) > 0) {
