@@ -53,7 +53,6 @@
 <div id="batchProcessingReport"></div>
 <div class="editorBottomPadding"><!-- empty --></div>
 
-<div id="batchProcessingMessage"></div>
 <div id="batchProcessingMore">
 	<?php print caNavLink($this->request, _t('Back to tool list'), '', 'manage', 'Tools', 'Index'); ?>
 </div>
@@ -76,7 +75,6 @@
 				var m = jQuery('#progressbar').progressbar("option", "max");
 				jQuery('#progressbar').progressbar("option", "value", m);
 				jQuery('#batchProcessingTableStatus').html('<?php print addslashes(_t("Complete!")); ?>');
-				jQuery('#batchProcessingMessage').show().html((data ? data['message'] : ''));
 				jQuery('#batchProcessingCounts').html(m + "/" + m);
 				
 			}, 'json');
