@@ -832,14 +832,13 @@
 					$va_params[] = $va_object_ids;
 				}
 
-				$qr_reps = $o_db->query("
-					SELECT *
+				$qr_reps = $o_db->query($x="
+					SELECT media, representation_id
 					FROM ca_object_representations
 					{$vs_sql_joins}
 					{$vs_sql_where}
 					ORDER BY ca_object_representations.representation_id
 				", $va_params);
-
 				print CLIProgressBar::start($qr_reps->numRows(), _t('Re-processing representation media'));
 				while($qr_reps->nextRow()) {
 					$va_media_info = $qr_reps->getMediaInfo('media');

@@ -211,9 +211,9 @@ var methods = {
                     
                     loader: {
                         loading: 0, //actual number of images that are currently loaded
-                        max_loading: 6, //max number of image that can be loaded simultaneously
+                        max_loading: 12, //max number of image that can be loaded simultaneously
                         tile_count: 0, //number of tiles in tile dictionary (not all of them are actually loaded)
-                        max_tiles: 200 //max number of images that can be stored in tiles dictionary
+                        max_tiles: 2000 //max number of images that can be stored in tiles dictionary
                     },
                     tiles: [] //tiles dictionary 
                 }; //layer definition
