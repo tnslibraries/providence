@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------
  *
  * Software by Whirl-i-Gig (http://www.whirl-i-gig.com)
- * Copyright 2011-2013 Whirl-i-Gig
+ * Copyright 2011-2018 Whirl-i-Gig
  *
  * For more information visit http://www.CollectiveAccess.org
  *
@@ -33,33 +33,25 @@
  *
  * ----------------------------------------------------------------------
  */
-
  /**
   *
   */
-
 require_once(__CA_LIB_DIR__."/ca/Service/BaseService.php");
 require_once(__CA_LIB_DIR__."/ca/Export/OAIPMH/OaiIdentifier.php");
 require_once(__CA_APP_DIR__."/helpers/utilityHelpers.php");
 require_once(__CA_APP_DIR__."/helpers/searchHelpers.php");
 require_once(__CA_APP_DIR__."/helpers/browseHelpers.php");
 require_once(__CA_APP_DIR__."/helpers/accessHelpers.php");
-
 require_once(__CA_MODELS_DIR__."/ca_data_exporters.php");
-
-
 class OAIPMHService extends BaseService {
 	const OAI_PMH_NAMESPACE_URI    = 'http://www.openarchives.org/OAI/2.0/';
 	const OAI_PMH_SCHEMA_URI       = 'http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd';
 	const OAI_PMH_PROTOCOL_VERSION = '2.0';
-
 	// XML namespace URI for XML schema
 	const XML_SCHEMA_NAMESPACE_URI = 'http://www.w3.org/2001/XMLSchema-instance';
-
 	// =========================
 	// Error codes
 	// =========================
-
 	const OAI_ERR_BAD_ARGUMENT              = 'badArgument';
 	const OAI_ERR_BAD_RESUMPTION_TOKEN      = 'badResumptionToken';
 	const OAI_ERR_BAD_VERB                  = 'badVerb';
@@ -68,55 +60,44 @@ class OAIPMHService extends BaseService {
 	const OAI_ERR_NO_RECORDS_MATCH          = 'noRecordsMatch';
 	const OAI_ERR_NO_METADATA_FORMATS       = 'noMetadataFormats';
 	const OAI_ERR_NO_SET_HIERARCHY          = 'noSetHierarchy';
-
 	// =========================
 	// Date/time constants
 	// =========================
-
 	/**
 	 * PHP date() format string to produce the required date format.
 	 * Must be used with gmdate() to conform to spec.
 	 */
 	const OAI_DATE_FORMAT = 'Y-m-d\TH:i:s\Z';
 	const DB_DATE_FORMAT  = 'Y-m-d H:i:s';
-
 	const OAI_DATE_PCRE     = "/^\\d{4}\\-\\d{2}\\-\\d{2}$/";
 	const OAI_DATETIME_PCRE = "/^\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}Z$/";
-
 	const OAI_GRANULARITY_STRING   = 'YYYY-MM-DDThh:mm:ssZ';
 	const OAI_GRANULARITY_DATE     = 1;
 	const OAI_GRANULARITY_DATETIME = 2;
-
 	/**
 	 * OAI XML document for output
 	 */
 	private $oaiData;
-
 	/**
 	 * OAI_provider.conf configuration file instance
 	 */
 	private $config;
-
 	/**
 	 * Maximum number of items to return is a single list response
 	 */
 	private $_listLimit;
-
 	/**
 	 * Error flag. Will be true if error occurs.
 	 */
 	private $error = false;
-
 	/**
 	 * Base url of the provider
 	 */
 	private $_baseUrl;
-
 	/**
 	 * ca_data_exporters object representing the selected mapping (as soon as it's been selected, i.e. on request)
 	 */
 	private $exporter;
-
 	/**
 	 * 'target' table name for the current request
 	 */
@@ -141,7 +122,6 @@ class OAIPMHService extends BaseService {
 		$this->oaiData->appendChild($o_root_node);
 	
 		$o_root_node->setAttributeNS(self::XML_SCHEMA_NAMESPACE_URI, 'xsi:schemaLocation', self::OAI_PMH_NAMESPACE_URI.' '.self::OAI_PMH_SCHEMA_URI);
-
 		$responseDate = $this->oaiData->createElement('responseDate', self::unixToUtc(time()));
 		$o_root_node->appendChild($responseDate);
 	
@@ -149,7 +129,7 @@ class OAIPMHService extends BaseService {
 		$this->opo_request = $po_request;
 	
 		// Get provider configuration info
-		$this->config = Configuration::load(__CA_CONF_DIR__.'/oai_provider.conf');
+		$this->config = Configuration::load($this->opo_request->config->get('oai_provider_config'));
 		$this->ops_provider = $ps_provider;
 		$this->opa_provider_list = $this->config->getAssoc('providers');
 		if(!is_array($this->opa_provider_info = $this->opa_provider_list[$ps_provider])) {
@@ -275,16 +255,13 @@ class OAIPMHService extends BaseService {
 			'deletedRecord'     => 'transient',
 			'granularity'       => self::OAI_GRANULARITY_STRING
 		);
-
 		$identify = $this->createElementWithChildren($oaiData,$oaiData->documentElement, 'Identify', $elements);
-
 		if(extension_loaded('zlib') && ini_get('zlib.output_compression')) {
 			$gzip = $oaiData->createElement('compression', 'gzip');
 			$deflate = $oaiData->createElement('compression', 'deflate');
 			$identify->appendChild($gzip);
 			$identify->appendChild($deflate);
 		}
-
 		$description = $oaiData->createElement('description');
 		$identify->appendChild($description);
 		OaiIdentifier::describeIdentifier($description);
@@ -338,25 +315,21 @@ class OAIPMHService extends BaseService {
 			$this->throwError(self::OAI_ERR_ID_DOES_NOT_EXIST, _t('Identifier is invalid'));
 			return;
 		}
-
 		$va_access_values = caGetUserAccessValues($this->opo_request, array_merge($this->opa_provider_info, array('ignoreProvidence' => true)));
 		$vb_show_deleted = (bool)$this->opa_provider_info['show_deleted'];
 		$vb_dont_enforce_access_settings = (bool)$this->opa_provider_info['dont_enforce_access_settings'];
-
 		if(!$vb_dont_enforce_access_settings && $t_item->hasField('access')) {
 			if(!in_array($t_item->get('access'), $va_access_values)) {
 				$this->throwError(self::OAI_ERR_ID_DOES_NOT_EXIST, _t('Identifier is invalid'));
 				return;
 			}
 		}
-
 		if($t_item->hasField('deleted')) {
 			if(!$vb_show_deleted && ((bool) $t_item->get('deleted'))) {
 				$this->throwError(self::OAI_ERR_ID_DOES_NOT_EXIST, _t('Identifier is deleted'));
 				return;
 			}
 		}
-
 		$va_last_change = $t_item->getLastChangeTimestamp();
 	
 		$vs_export = ca_data_exporters::exportRecord($this->getMappingCode(),$t_item->getPrimaryKey());
@@ -365,16 +338,12 @@ class OAIPMHService extends BaseService {
 			'identifier' => OaiIdentifier::itemToOaiId($vs_item_id),
 			'datestamp' => self::unixToUtc((int) $va_last_change['timestamp']),
 		);
-
 		$exportFragment = $oaiData->createDocumentFragment();
 		$exportFragment->appendXML($vs_export);
-
 		$recordElement = $getRecord->appendChild($oaiData->createElement('record'));
 		$this->createElementWithChildren($oaiData, $recordElement, 'header', $headerData);
-
 		$metadataElement = $oaiData->createElement('metadata');
 		$metadataElement->appendChild($exportFragment);
-
 		$recordElement->appendChild($metadataElement);
 	}
 	# -------------------------------------------------------
@@ -382,7 +351,7 @@ class OAIPMHService extends BaseService {
 	 * Responds to ListSets OAI verb
 	 */
 	private function listSets($oaiData) {
-		$va_access_values = caGetUserAccessValues($this->opo_request, $this->opa_provider_info);
+		$va_access_values = caGetUserAccessValues($this->opo_request, array_merge($this->opa_provider_info, ['ignoreProvidence' => true]));
 		$vb_show_deleted = (bool)$this->opa_provider_info['show_deleted'];
 		$vb_dont_enforce_access_settings = (bool)$this->opa_provider_info['dont_enforce_access_settings'];
 		$vb_dont_cache = (bool)$this->opa_provider_info['dont_cache'];
@@ -481,8 +450,7 @@ class OAIPMHService extends BaseService {
 		// by this point, the mapping code was checked to be valid
 		$t_instance = $o_dm->getInstanceByTableName($this->table, true);
 		$vs_pk = $t_instance->primaryKey();
-		$va_access_values = caGetUserAccessValues($this->opo_request, $this->opa_provider_info);
-	
+		$va_access_values = caGetUserAccessValues($this->opo_request, array_merge($this->opa_provider_info, ['ignoreProvidence' => true]));
 		$vb_show_deleted = (bool)$this->opa_provider_info['show_deleted'];
 		$vb_dont_enforce_access_settings = (bool)$this->opa_provider_info['dont_enforce_access_settings'];
 		$vb_dont_cache = (bool)$this->opa_provider_info['dont_cache'];
@@ -499,19 +467,21 @@ class OAIPMHService extends BaseService {
 		$vs_conj = array_shift($o_lang_settings->getList("rangeConjunctions"));
 		$vs_range = ($from && $until) ? "{$from} {$vs_conj} {$until}" : '';
    
-		if ($set && $this->opa_provider_info['setFacet']) {
+		if (($set && $this->opa_provider_info['setFacet']) || $vs_range) {
 			$o_browse = caGetBrowseInstance($this->table);
 		
-			if (($vs_query = $this->opa_provider_info['query']) && ($vs_query != "*")) {
+			if ($vs_query = $this->opa_provider_info['query']) {
 				$o_browse->addCriteria("_search", $vs_query);
 			}
-			$o_browse->addCriteria($this->opa_provider_info['setFacet'], $set);
+			
+			if ($this->opa_provider_info['setFacet'] && $set) {
+				$o_browse->addCriteria($this->opa_provider_info['setFacet'], $set);
+			}
 			$o_browse->execute(array('showDeleted' => $vb_show_deleted, 'no_cache' => $vb_dont_cache, 'limitToModifiedOn' => $vs_range, 'checkAccess' => $vb_dont_enforce_access_settings ? null : $va_access_values));
 			$qr_res = $o_browse->getResults();
 		} else {
 			$qr_res = $o_search->search(strlen($this->opa_provider_info['query']) ? $this->opa_provider_info['query'] : "*", array('no_cache' => $vb_dont_cache, 'limitToModifiedOn' => $vs_range, 'showDeleted' => $vb_show_deleted, 'checkAccess' => $vb_dont_enforce_access_settings ? null : $va_access_values));
 		}
-
 		if (!$qr_res) {
 			 $this->throwError(self::OAI_ERR_NO_RECORDS_MATCH, _t('Query failed'));
 			 return;
@@ -519,7 +489,7 @@ class OAIPMHService extends BaseService {
 	
 		$rows = $qr_res->numHits();
 	
-		if(count($qr_res->numHits()) == 0) {
+		if($qr_res->numHits() == 0) {
 			$this->throwError(self::OAI_ERR_NO_RECORDS_MATCH, _t('No records match the given criteria'));
 		} else {
 			$verbElement = $oaiData->createElement($verb);
@@ -586,10 +556,10 @@ class OAIPMHService extends BaseService {
 							$this->createElementWithChildren($oaiData, $recordElement, 'header', $headerData);
 							$metadataElement = $oaiData->createElement('metadata');
 							$o_doc_src = DomDocument::loadXML($vs_item_xml);
+							$recordElement->appendChild($metadataElement);
 							if($o_doc_src) { // just in case the xml fails to load through DomDocument for some reason (e.g. a bad mapping or very weird characters)
 								$metadataElement->appendChild($oaiData->importNode($o_doc_src->documentElement, true));
 							}
-							$recordElement->appendChild($metadataElement);
 						}
 					}
 				}
@@ -603,7 +573,6 @@ class OAIPMHService extends BaseService {
 					$from,
 					$until
 				);
-
 				$tokenElement = $oaiData->createElement('resumptionToken', $token['key']);
 				$tokenElement->setAttribute('expirationDate',self::unixToUtc($token['expiration']));
 				$tokenElement->setAttribute('completeListSize', $rows);
@@ -628,7 +597,6 @@ class OAIPMHService extends BaseService {
 	 * @return array resumption token info
 	 */
 	private function createResumptionToken($verb, $metadataPrefix, $cursor, $set, $from, $until) {
-
 		$va_token_info = array(
 			'verb' => $verb,
 			'metadata_prefix' => $metadataPrefix,
@@ -640,7 +608,6 @@ class OAIPMHService extends BaseService {
 		);
 		$vs_key = md5(print_r($va_token_info, true).'/'.time().'/'.rand(0, 1000000));
 		$va_token_info['key'] = $vs_key;
-
 		ExternalCache::save($vs_key, $va_token_info, 'OAIPMHService');
 	
 		return $va_token_info;
@@ -765,19 +732,16 @@ class OAIPMHService extends BaseService {
 		if(!is_array($this->opa_provider_info['formats'])){
 			$this->throwError(self::OAI_ERR_CANNOT_DISSEMINATE_FORMAT, _t("Invalid format configuration"));
 		}
-
 		if ($vs_metadata_prefix) {
 			if(!in_array($vs_metadata_prefix, array_keys($this->opa_provider_info['formats']))){
 				$this->throwError(self::OAI_ERR_CANNOT_DISSEMINATE_FORMAT, _t("Unknown format %1",$vs_metadata_prefix));			
 			}
 		}
-
 		if($vs_mapping = $this->getMappingCode()){
 			if($this->exporter = ca_data_exporters::loadExporterByCode($vs_mapping)){
 				if($this->exporter->getSetting('exporter_format') != "XML"){
 					$this->throwError(self::OAI_ERR_BAD_ARGUMENT, _t("Selected mapping %1 is invalid", $vs_mapping));
 				}
-
 				$this->table = $this->exporter->getAppDatamodel()->getTableName($this->exporter->get('table_num'));
 			} else {
 				$this->throwError(self::OAI_ERR_CANNOT_DISSEMINATE_FORMAT, _t("Exporter with code %1 does not exist", $vs_mapping));
@@ -785,7 +749,6 @@ class OAIPMHService extends BaseService {
 		} else {
 			$this->throwError(self::OAI_ERR_CANNOT_DISSEMINATE_FORMAT, _t("metadataPrefix or default_format is invalid", $vs_mapping));
 		}
-
 		return !$this->error;
 	}
 	# -------------------------------------------------------
@@ -860,7 +823,6 @@ class OAIPMHService extends BaseService {
 		if(!$ps_metadata_prefix) {
 			$ps_metadata_prefix = $this->opo_request->getParameter('metadataPrefix', pString);
 		}
-
 		if(!$ps_metadata_prefix && isset($this->opa_provider_info['default_format'])) {
 			$ps_metadata_prefix = $this->opa_provider_info['default_format'];
 		}
@@ -870,7 +832,6 @@ class OAIPMHService extends BaseService {
 				return $this->opa_provider_info['formats'][$ps_metadata_prefix]['mapping'];
 			}
 		}
-
 		return false;
 	}	
 	# -------------------------------------------------------	
